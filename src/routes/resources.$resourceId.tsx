@@ -5,6 +5,7 @@ import {
   useRouter,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarDays,
@@ -18,7 +19,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   getResourceById,
@@ -98,7 +99,6 @@ function ResourceDetailPage() {
       </p>
 
       <Card className="mt-6">
-        <CardHeader className="pb-0" />
         <CardContent className="space-y-5 p-6">
           <section>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -147,7 +147,7 @@ function ResourceDetailPage() {
           </section>
         </CardContent>
         <CardFooter className="border-t p-6">
-          <Button variant="outline" disabled onClick={() => toastInfoEdit()}>
+          <Button variant="outline" onClick={() => toast.info("Chỉnh sửa sẽ có sau khi kết nối database.")}>
             <Pencil className="size-4" />
             Chỉnh sửa (sắp có)
           </Button>
@@ -155,11 +155,6 @@ function ResourceDetailPage() {
       </Card>
     </div>
   );
-}
-
-// Nút sửa đang tắt — sẽ mở form chỉnh sửa sau khi có database.
-function toastInfoEdit() {
-  // Placeholder: thay bằng toast.info("…") khi có dữ liệu thật.
 }
 
 function ResourceDetailError({ error, reset }: ErrorComponentProps) {
