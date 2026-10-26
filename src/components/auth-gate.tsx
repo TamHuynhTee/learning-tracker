@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   useEffect(() => {
-    if (!loading && !session) void navigate({ to: "/login", replace: true });
-  }, [loading, session, navigate]);
-  if (loading || !session) {
+    if (!loading && !user) void navigate({ to: "/login", replace: true });
+  }, [loading, user, navigate]);
+  if (loading || !user) {
     return (
       <p role="status" className="mx-auto max-w-6xl px-4 py-10 text-muted-foreground">
         {t("auth.loadingSession")}
@@ -18,5 +18,5 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   }
   // Remount forms when the account changes to prevent carrying drafts across users.
-  return <div key={session.user.id}>{children}</div>;
+  return <div key={user.id}>{children}</div>;
 }

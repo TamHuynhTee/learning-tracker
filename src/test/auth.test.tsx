@@ -146,7 +146,7 @@ describe("Supabase authentication", () => {
     expect(auth.signUp).toHaveBeenCalledWith({
       email: "learner@example.com",
       password: "password-123",
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     expect(screen.getByLabelText("Password")).toHaveValue("");
   });
@@ -186,8 +186,8 @@ describe("Supabase authentication", () => {
       return { data: { subscription: { unsubscribe } } };
     });
     function SessionView() {
-      const { session, loading } = useAuth();
-      return <p>{loading ? "Loading" : (session?.user.email ?? "Signed out")}</p>;
+      const { user, loading } = useAuth();
+      return <p>{loading ? "Loading" : (user?.email ?? "Signed out")}</p>;
     }
     const queryClient = new QueryClient();
     const view = render(

@@ -132,5 +132,7 @@
   "resource.deleted": "Resource deleted.",
   "resource.deleteConfirm": "Permanently delete this resource? This action cannot be undone.",
   "resource.deleteFailed": "Unable to delete this resource. Please try again.",
-  "auth.passwordRequired": "Please enter your password."
+  "auth.passwordRequired": "Please enter your password.",
+  "auth.emailConfirmed": "Email confirmed. You can sign in.",
+  "auth.confirmationFailed": "Unable to confirm your email. The link may have expired or been opened in another browser. Please request a new confirmation email."
 }

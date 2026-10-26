@@ -10,4 +10,5 @@
 - [x] Bước 7: Kiểm thử routing + dữ liệu mẫu
 - [x] Bước 8: Kết nối Supabase riêng (cấu hình client, Auth, schema resources và enum thống nhất)
 - [x] Bước 9: Code CRUD thật (đọc/thêm/sửa/xóa/đổi trạng thái) + bảo vệ các trang tài liệu theo phiên trình duyệt
-- [ ] Bước 10: Kiểm tra thủ công trên project thật: xác nhận email, CRUD, tải lại trang, RLS giữa hai tài khoản (xem SUPABASE.md)
+- [x] Bước 10: Chuyển dữ liệu qua Start loaders/server functions, cookie Auth/SSR và callback PKCE
+- [ ] Bước 11: Kiểm tra thủ công trên project thật: xác nhận email, CRUD, tải lại trang, RLS giữa hai tài khoản (xem SUPABASE.md)

@@ -1,56 +1,43 @@
-import { useTranslation } from "react-i18next";
-import { defaultT } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
 import { BookOpen, Globe, Plus, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  formatDate,
   RESOURCE_STATUSES,
   STATUS_BADGE_CLASS,
-  formatDate,
   urlHostname,
   type Resource,
   type ResourceStatus,
 } from "@/lib/resources";
 
-import { AuthGate } from "@/components/auth-gate";
-import { useResources } from "@/hooks/use-resources";
+import { defaultT } from "@/lib/i18n";
+import { ResourcePending, ResourceLoadError } from "@/components/resource-route-state";
+import { getResourcesFn } from "@/lib/resources.functions";
 
 type StatusFilter = "all" | ResourceStatus;
-const EMPTY_RESOURCES: Resource[] = [];
 
 export const Route = createFileRoute("/resources/")({
+  loader: () => getResourcesFn(),
+  pendingComponent: ResourcePending,
+  errorComponent: ResourceLoadError,
   head: () => ({
     meta: [
       { title: defaultT("resources.pageTitle") },
-      {
-        name: "description",
-        content: defaultT("resources.description"),
-      },
-      { property: "og:title", content: defaultT("resources.pageTitle") },
-      {
-        property: "og:description",
-        content: defaultT("resources.description"),
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "description", content: defaultT("resources.description") },
     ],
   }),
-  component: () => (
-    <AuthGate>
-      <ResourcesPage />
-    </AuthGate>
-  ),
+  component: ResourcesPage,
 });
 
 function ResourcesPage() {
   const { t } = useTranslation();
-  const result = useResources();
-  const resources = result.data ?? EMPTY_RESOURCES;
+  const resources = Route.useLoaderData();
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [query, setQuery] = useState("");
 
@@ -73,22 +60,6 @@ function ResourcesPage() {
       return matchesStatus && matchesQuery;
     });
   }, [filter, query, resources]);
-
-  if (result.isPending)
-    return (
-      <p role="status" className="p-8">
-        {t("resource.loading")}
-      </p>
-    );
-  if (result.isError)
-    return (
-      <div className="p-8" role="alert">
-        <p>{t("resource.loadErrorHint")}</p>
-        <Button variant="outline" className="mt-3" onClick={() => void result.refetch()}>
-          {t("common.retry")}
-        </Button>
-      </div>
-    );
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">

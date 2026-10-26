@@ -10,13 +10,14 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { BookOpenCheck, Plus } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+import { getCurrentUserFn } from "@/lib/auth.functions";
 import { AuthProvider } from "@/components/auth-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { getSupabase } from "@/lib/supabase";
@@ -77,6 +78,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: () => getCurrentUserFn(),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -149,7 +151,7 @@ function LocalizedShell({ children }: { children: ReactNode }) {
 
 function AppHeader() {
   const { t } = useTranslation();
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const { queryClient } = Route.useRouteContext();
   const [signingOut, setSigningOut] = useState(false);
@@ -161,7 +163,9 @@ function AppHeader() {
       const { error } = await getSupabase().auth.signOut({ scope: "local" });
       if (error) throw error;
       queryClient.clear();
+      router.clearCache();
       await router.navigate({ to: "/login" });
+      await router.invalidate();
       toast.success(t("auth.signedOut"));
     } catch (error) {
       toast.error(t(authErrorKey(error)));
@@ -204,13 +208,13 @@ function AppHeader() {
             <span role="status" className="text-xs text-muted-foreground">
               {t("auth.loadingSession")}
             </span>
-          ) : session ? (
+          ) : user ? (
             <>
               <span
                 className="max-w-40 truncate text-xs text-muted-foreground"
-                title={session.user.email}
+                title={user.email ?? undefined}
               >
-                {session.user.email}
+                {user.email}
               </span>
               <Button size="sm" onClick={signOut} disabled={signingOut}>
                 {t("auth.signOut")}
@@ -241,21 +245,44 @@ function AppFooter() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
+  const initialUser = Route.useLoaderData();
+  const router = useRouter();
+  const onUserChange = useCallback(() => {
+    router.clearCache();
+    void router.invalidate();
+  }, [router]);
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <AuthProvider initialUser={initialUser} onUserChange={onUserChange}>
         <div className="flex min-h-screen flex-col bg-background text-foreground">
           <AppHeader />
           <main className="flex-1">
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
+            <AuthenticatedOutlet />
           </main>
           <AppFooter />
         </div>
         <Toaster position="top-center" richColors />
       </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function AuthenticatedOutlet() {
+  const serverUser = Route.useLoaderData();
+  const { user, loading } = useAuth();
+  const { t } = useTranslation();
+  // Hide old loader data immediately while switching/logging out of an account.
+  if (loading || serverUser?.id !== user?.id) {
+    return (
+      <p role="status" className="p-8 text-muted-foreground">
+        {t("auth.loadingSession")}
+      </p>
+    );
+  }
+  return (
+    <div key={user?.id ?? "anonymous"}>
+      <Outlet />
+    </div>
   );
 }
 

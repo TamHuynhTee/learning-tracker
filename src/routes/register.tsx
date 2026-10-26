@@ -57,7 +57,7 @@ function RegisterPage() {
       const { data, error } = await getSupabase().auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/login` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
       resetField("password");

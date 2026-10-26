@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { defaultT } from "@/lib/i18n";
 import { getSupabase } from "@/lib/supabase";
 import { authErrorKey } from "@/lib/auth-errors";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginValues } from "@/lib/auth-validation";
@@ -38,12 +38,18 @@ export const Route = createFileRoute("/login")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { confirmation?: "success" | "error" } =>
+    search["confirmation"] === "success" || search["confirmation"] === "error"
+      ? { confirmation: search["confirmation"] }
+      : {},
   component: LoginPage,
 });
 
 function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const router = useRouter();
+  const { confirmation } = Route.useSearch();
   const {
     register,
     handleSubmit,
@@ -63,6 +69,8 @@ function LoginPage() {
       if (error) throw error;
       resetField("password");
       toast.success(t("auth.loginSuccess"));
+      router.clearCache();
+      await router.invalidate({ sync: true });
       await navigate({ to: "/resources" });
     } catch (error) {
       setError("root.server", { message: authErrorKey(error) });
@@ -84,6 +92,14 @@ function LoginPage() {
           <CardDescription>{t("auth.loginDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
+          {confirmation ? (
+            <p
+              role={confirmation === "error" ? "alert" : "status"}
+              className="mb-4 text-sm text-muted-foreground"
+            >
+              {t(confirmation === "success" ? "auth.emailConfirmed" : "auth.confirmationFailed")}
+            </p>
+          ) : null}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.email")}</Label>

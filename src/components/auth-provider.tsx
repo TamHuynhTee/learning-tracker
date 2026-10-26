@@ -1,40 +1,43 @@
-import { useEffect, useState, type ReactNode } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getSupabase } from "@/lib/supabase";
-import { AuthContext } from "@/hooks/use-auth";
+import { AuthContext, type AuthUser } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  initialUser,
+  onUserChange,
+}: {
+  children: ReactNode;
+  initialUser?: AuthUser | null;
+  onUserChange?: () => void;
+}) {
   const queryClient = useQueryClient();
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(initialUser ?? null);
+  const [loading, setLoading] = useState(initialUser === undefined);
+  const previousId = useRef(initialUser?.id);
 
   useEffect(() => {
-    // INITIAL_SESSION restores the persisted session; later events keep every
-    // consumer in sync after sign-in, sign-out, refresh, or another tab changing it.
     try {
-      const { data } = getSupabase().auth.onAuthStateChange((_event, next) => {
-        setSession(next);
+      const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
+        setUser(session ? { id: session.user.id, email: session.user.email ?? null } : null);
         setLoading(false);
       });
       return () => data.subscription.unsubscribe();
     } catch {
-      // Login/register report configuration failures when submitted.
       setLoading(false);
       return undefined;
     }
   }, []);
 
-  const userId = session?.user.id;
   useEffect(() => {
-    if (!userId) return undefined;
-    return () => {
-      // Abort in-flight queries and remove private data on logout/account change,
-      // including auth events originating from another browser tab.
-      void queryClient.cancelQueries({ queryKey: ["resources", userId] });
-      queryClient.removeQueries({ queryKey: ["resources", userId] });
-    };
-  }, [queryClient, userId]);
+    if (loading) return;
+    if (previousId.current !== user?.id) {
+      queryClient.clear();
+      onUserChange?.();
+      previousId.current = user?.id;
+    }
+  }, [user?.id, loading, queryClient, onUserChange]);
 
-  return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
 }

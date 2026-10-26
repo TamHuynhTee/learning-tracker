@@ -132,5 +132,7 @@
   "resource.deleted": "Đã xóa tài liệu.",
   "resource.deleteConfirm": "Xóa vĩnh viễn tài liệu này? Thao tác này không thể hoàn tác.",
   "resource.deleteFailed": "Không xóa được tài liệu. Vui lòng thử lại.",
-  "auth.passwordRequired": "Vui lòng nhập mật khẩu."
+  "auth.passwordRequired": "Vui lòng nhập mật khẩu.",
+  "auth.emailConfirmed": "Đã xác nhận email. Bạn có thể đăng nhập.",
+  "auth.confirmationFailed": "Không xác nhận được email. Liên kết có thể đã hết hạn hoặc được mở ở trình duyệt khác. Hãy yêu cầu email xác nhận mới."
 }

@@ -87,7 +87,7 @@ describe("Resource editing and route access", () => {
     await router.load();
     render(
       <I18nextProvider i18n={createAppI18n()}>
-        <AuthContext.Provider value={{ session: null, loading: false }}>
+        <AuthContext.Provider value={{ user: null, loading: false }}>
           <RouterProvider router={router} />
         </AuthContext.Provider>
       </I18nextProvider>,

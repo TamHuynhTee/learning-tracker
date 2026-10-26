@@ -1,15 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { defaultT } from "@/lib/i18n";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AuthGate } from "@/components/auth-gate";
+import { ResourcePending, ResourceLoadError } from "@/components/resource-route-state";
 import { ResourceForm } from "@/components/resource-form";
-import { useAuth } from "@/hooks/use-auth";
-import { createResource, type ResourceInput } from "@/lib/resource-api";
+import { createResourceFn, requireResourceUserFn } from "@/lib/resources.functions";
+import type { ResourceInput } from "@/lib/resource-model";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/resources/new")({
+  loader: () => requireResourceUserFn(),
+  pendingComponent: ResourcePending,
+  errorComponent: ResourceLoadError,
   head: () => ({
     meta: [
       { title: defaultT("resource.newTitle") },
@@ -26,21 +29,18 @@ export const Route = createFileRoute("/resources/new")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => (
-    <AuthGate>
-      <NewResourcePage />
-    </AuthGate>
-  ),
+  component: NewResourcePage,
 });
 
 function NewResourcePage() {
   const { t } = useTranslation();
-  const { session } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const router = useRouter();
+  const createResource = useServerFn(createResourceFn);
   async function save(input: ResourceInput) {
-    const resource = await createResource(session!.user.id, input);
-    await queryClient.invalidateQueries({ queryKey: ["resources", session!.user.id] });
+    const resource = await createResource({ data: input });
+    if (!resource) return;
+    await router.invalidate({ sync: true });
     toast.success(t("resource.created"));
     await navigate({ to: "/resources/$resourceId", params: { resourceId: resource.id } });
   }

@@ -1,104 +1,115 @@
-# Kết nối Supabase
+# Supabase + TanStack Start
 
-## Cấu hình local
+## Cấu hình
 
-Thư viện `@supabase/supabase-js` đã được cài. Tạo `.env.local` ở thư mục gốc:
+Hai biến public được dùng cho cả browser client và server client:
 
 ```dotenv
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Có thể dùng anon key cũ làm giá trị của `VITE_SUPABASE_PUBLISHABLE_KEY`.
-Không dùng secret key hoặc service_role key cho các biến `VITE_*`.
-`.env.local` đã được bỏ qua bởi quy tắc `*.local` trong `.gitignore`.
+Không dùng secret key hoặc service_role key. `.env.local` dành cho máy local,
+đã được Git bỏ qua. Lovable cần hai biến public trong `.env` được commit để build
+preview và bản publish; không đưa backend secrets vào file đó.
 
-Chạy `pnpm dev`. Mỗi lần thay đổi biến môi trường, dừng và khởi động lại dev server.
+Chạy `pnpm dev`; khi đổi env phải khởi động lại server. Khi deploy, các biến
+`VITE_*` được nhúng lúc build nên phải build/publish lại sau khi đổi.
 
-## Cấu hình Auth trong Supabase Dashboard
+## Auth và xác nhận email
 
-1. Trong Authentication → Sign In / Providers, bật Email/password.
-2. Trong Authentication → URL Configuration, đặt Site URL theo địa chỉ app hiện tại.
-3. Thêm địa chỉ đăng nhập vào Redirect URLs, ví dụ `http://localhost:5173/login`.
-   Dùng đúng host và port do terminal hiển thị, nếu khác ví dụ.
-4. Khi deploy, thêm URL tương ứng của bản deploy và cấu hình hai biến môi trường
-   ở nơi build app. Các biến `VITE_*` được nhúng khi build; cần build lại khi đổi.
+App dùng `@supabase/ssr`: browser client lưu phiên trong cookie để server đọc được.
+Người dùng có phiên localStorage của bản cũ có thể cần đăng nhập lại một lần.
 
-Nếu bật Confirm email, sau khi đăng ký cần mở email xác nhận trước khi đăng nhập.
-Sau khi đăng ký thành công, app chuyển về `/login` trong cả hai trường hợp và
-hiển thị thông báo xác nhận email nếu cần. Khi Confirm email bị tắt, Supabase có
-thể trả về phiên ngay; app vẫn giữ phiên đó.
-Không cần bật Google để dùng email/password; nút Google hiện vẫn là placeholder.
+Trong Supabase Dashboard:
 
-## Phần đã tích hợp
+1. Authentication → Sign In / Providers: bật Email/password.
+2. Authentication → URL Configuration: đặt Site URL là origin chính thức của app.
+3. Thêm Redirect URLs theo host/port thực tế:
+   - `http://localhost:5173/auth/callback` (đổi port theo terminal).
+   - `http://127.0.0.1:5174/auth/callback` nếu dùng dev server kiểm tra này.
+   - `https://TEN-APP.lovable.app/auth/callback` và URL tương ứng cho preview/domain riêng.
 
-- `/register`: gọi `auth.signUp`, xử lý lỗi và trường hợp cần xác nhận email.
-- `/login`: gọi `auth.signInWithPassword`, chỉ chuyển trang khi thành công.
-- Header: hiển thị email người dùng, đăng xuất trên trình duyệt hiện tại.
-- `AuthProvider`: theo dõi `onAuthStateChange` để khôi phục và cập nhật phiên.
-- Client Auth chỉ khởi tạo ở trình duyệt; chưa có Auth bằng cookie trên SSR.
+Đăng ký thành công chuyển về `/login`, vẫn nhắc xác nhận email khi cần. Email xác
+nhận quay về `/auth/callback`; server đổi PKCE code thành session cookie rồi
+chuyển tới `/login?confirmation=success`. Mã thiếu/hết hạn chuyển về login cùng
+thông báo lỗi. PKCE yêu cầu mở email trong cùng trình duyệt đã đăng ký.
+Nút Google hiện vẫn là placeholder.
 
-## Kiểm tra thủ công
+## Luồng dữ liệu
 
-1. Đăng ký bằng email bạn kiểm soát; xác nhận email nếu Supabase yêu cầu.
-2. Thử đăng nhập sai mật khẩu: phải báo lỗi và ở lại trang đăng nhập.
-3. Đăng nhập đúng: chuyển sang `/resources`, header hiển thị email.
-4. Tải lại trang: header khôi phục phiên đăng nhập.
-5. Đăng xuất: trở về `/login`, header hiện nút Đăng nhập.
+```text
+Route loader → server function GET → kiểm tra user → Supabase + RLS
+Form → server function POST + Zod → kiểm tra user → ghi Supabase + RLS
+Thành công → router.invalidate() → loader tải dữ liệu mới
+```
 
-Các test tự động mock Supabase; chưa chứng minh kết nối với project thật.
+- `src/lib/supabase.ts`: browser client, chỉ dùng cho Auth.
+- `src/lib/supabase.server.ts`: tạo client riêng mỗi request, đọc/ghi cookie, chuyển
+  tiếp cache headers của Supabase khi refresh, xác thực người dùng bằng `getUser()`.
+- `src/lib/auth.functions.ts`: root loader lấy duy nhất user id/email, không serialize
+  access token hoặc refresh token vào HTML.
+- `src/lib/resources.functions.ts`: GET danh sách/chi tiết, POST thêm/sửa/xóa; mỗi
+  endpoint kiểm tra Auth riêng và lấy user_id từ phiên server.
+- `src/lib/resource-validation.ts`: kiểm tra dữ liệu đầu vào tại server bằng Zod.
+- `src/lib/resource-model.ts`: chuẩn hóa cột nullable và ngày tháng cho giao diện.
+- `src/routes/resources.index.tsx`, `resources.$resourceId.tsx`: đọc `Route.useLoaderData()`.
+- `src/routes/resources.new.tsx`: loader bảo vệ route, form gọi server function.
 
-## Tài liệu và quyền truy cập
+Sửa thành công chờ `router.invalidate({ sync: true })` để chi tiết hiển thị dữ liệu
+mới. Sau xóa, chuyển sang danh sách trước rồi invalidate để không tải lại tài liệu
+vừa bị xóa. Có pending/error/not-found UI cho các route.
 
-Các trang `/resources`, `/resources/new`, `/resources/:resourceId` yêu cầu phiên
-đăng nhập trước khi tải dữ liệu. Phiên nằm trong trình duyệt; SSR không tải dữ liệu
-riêng tư. RLS vẫn là lớp kiểm soát quyền truy cập tại database.
+SSR có thể render dữ liệu người dùng từ loader ngay. Phản hồi đọc phiên/dữ liệu
+đặt `Cache-Control: private, no-store`. AuthProvider dùng public user từ root loader
+để render ban đầu; khi tài khoản thay đổi, cache được xóa, loader được invalidate
+và nội dung cũ được ẩn cho đến khi root loader khớp với người dùng hiện tại.
+Middleware CSRF sẵn có trong `src/start.ts` vẫn bảo vệ server functions.
 
-App đọc và ghi bảng `public.resources` theo schema người dùng cung cấp:
+## Schema và RLS
+
+Bảng `public.resources`:
 
 - `id`, `user_id`: UUID.
-- `title`: bắt buộc; `url`, `topic`, `notes`: có thể null.
-- `status`: enum `public.resource_status` với `not_started`, `learning`, `completed`.
+- `title`: bắt buộc; `url`, `topic`, `notes`: nullable.
+- `status`: enum `public.resource_status`: `not_started`, `learning`, `completed`.
 - `created_at`, `updated_at`: timestamptz.
 
-Code và database dùng chung enum trong `src/lib/resources.ts`; chỉ nhãn hiển thị
-được dịch theo ngôn ngữ:
+Code và database dùng cùng enum; nhãn hiển thị được dịch theo ngôn ngữ.
+Server luôn gửi user_id của người đăng nhập khi thêm tài liệu, không dựa vào
+`gen_random_uuid()` mặc định của cột này. Sửa/xóa/đọc cũng lọc theo user_id.
+App gửi updated_at khi sửa. Không thay schema hoặc policy trên Supabase.
 
-| Database      | Giao diện  |
-| ------------- | ---------- |
-| `not_started` | Chưa học   |
-| `learning`    | Đang học   |
-| `completed`   | Hoàn thành |
-
-Client luôn gửi `user_id` của người đăng nhập khi thêm mới, không dựa vào default
-`gen_random_uuid()` của cột này. Các truy vấn đọc, sửa, xóa cũng lọc theo user_id.
-Khi cập nhật, app gửi `updated_at` mới. Không sửa schema hay policy trên Supabase.
-
-Policy được người dùng cung cấp:
+Policy do người dùng cung cấp:
 
 - SELECT/DELETE: `auth.uid() = user_id` trong USING.
 - INSERT: `auth.uid() = user_id` trong WITH CHECK.
 - UPDATE: `auth.uid() = user_id` trong cả USING và WITH CHECK.
 
-Danh sách có tìm kiếm và lọc theo trạng thái; trang thêm/chi tiết dùng form chung
-để thêm, sửa thông tin và đổi trạng thái. Xóa cần xác nhận trong giao diện.
-Dữ liệu mẫu được giữ lại để tham chiếu và chạy test, không dùng trên các trang.
-Cache được tách theo tài khoản và xóa khi đăng xuất hoặc đổi tài khoản.
+RLS vẫn là lớp kiểm soát quyền trong database, ngay cả khi đã có Auth ở server.
+Dữ liệu mẫu chỉ còn làm fixture/tham chiếu.
 
-## Kiểm tra CRUD với tài khoản thật
+## Kiểm tra
 
-1. Đăng nhập tài khoản A, thêm tài liệu có tiêu đề; URL/chủ đề/ghi chú có thể bỏ trống.
-2. Tải lại trang và kiểm tra tài liệu vừa thêm vẫn còn.
-3. Mở chi tiết, chỉnh sửa ghi chú và đổi trạng thái sang Đang học, rồi Hoàn thành.
-4. Kiểm tra danh sách, bộ lọc và dữ liệu sau khi tải lại trang.
-5. Đăng xuất, đăng nhập tài khoản B: tài liệu của A không được hiển thị.
-   Thử URL chi tiết của tài liệu A: B phải nhận thông báo không tìm thấy/không có quyền.
-6. Quay lại A, thử hủy xóa trước; sau đó xác nhận xóa và kiểm tra tài liệu đã biến mất.
+Chạy `pnpm test`, `pnpm exec tsc --noEmit`, `pnpm build`.
+Test tự động mock Supabase để kiểm tra quyền theo user, validation ở server,
+không tin user_id do client giả mạo, luồng cookie/PKCE và tải lại loader sau CRUD.
+Đã kiểm tra dev server thật: `/login` trả 200; ba route tài liệu trả 307 về login
+khi không có cookie; callback không có code trả 303 cùng thông báo lỗi.
 
-Kiểm tra kết nối read-only trong phiên tích hợp: Auth settings trả HTTP 200,
-Email provider đã bật; truy vấn REST resources không đăng nhập trả HTTP 200 với
-0 hàng. Endpoint metadata `/rest/v1/` trả 401 "Secret API key required"; điều này
-không yêu cầu thay publishable key của frontend. Chưa kiểm thử CRUD đăng nhập
-thật hoặc xác minh RLS với hai tài khoản trong môi trường này.
+Cần kiểm tra tiếp bằng tài khoản thật:
 
-Tài liệu: https://supabase.com/docs/guides/auth/passwords
+1. Đăng ký, xác nhận email trong cùng trình duyệt, đăng nhập.
+2. Thêm tài liệu rồi tải lại trực tiếp danh sách và URL chi tiết; dữ liệu vẫn còn.
+3. Sửa thông tin, đổi trạng thái, kiểm tra dữ liệu cập nhật ngay.
+4. Thử hủy xóa, sau đó xác nhận xóa; trở về danh sách, không xuất hiện lỗi 404 tạm.
+5. Đăng xuất và đăng nhập tài khoản B; không thấy dữ liệu của A cả khi quay lại
+   lịch sử trình duyệt hoặc mở trực tiếp URL tài liệu A.
+
+Chưa xác minh CRUD/RLS end-to-end trên Supabase thật bằng hai tài khoản trong phiên
+này. Không tạo tài khoản hoặc sửa/xóa dữ liệu thật để chạy test.
+
+Tham khảo:
+
+- https://supabase.com/docs/guides/getting-started/quickstarts/tanstack
+- https://tanstack.com/start/latest/docs/framework/react/guide/server-functions

@@ -53,7 +53,7 @@ export function urlHostname(url: string): string {
 }
 
 // ============ Dữ liệu mẫu (bản demo giao diện) ============
-// Giữ làm fixture/tham chiếu; các trang thực tế đọc từ Supabase qua resource-api.ts.
+// Giữ làm fixture/tham chiếu; các trang thực tế đọc từ Supabase qua resources.functions.ts.
 
 export const sampleResources: Resource[] = [
   {

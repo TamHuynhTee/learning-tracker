@@ -1,14 +1,9 @@
-import { useTranslation } from "react-i18next";
-import { defaultT } from "@/lib/i18n";
-import { createFileRoute, Link, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { AuthGate } from "@/components/auth-gate";
 import { ResourceForm } from "@/components/resource-form";
-import { useResource } from "@/hooks/use-resources";
-import { useAuth } from "@/hooks/use-auth";
-import { updateResource, deleteResource, type ResourceInput } from "@/lib/resource-api";
-import { toast } from "sonner";
+import type { ResourceInput } from "@/lib/resource-model";
+import { useServerFn } from "@tanstack/react-start";
+import { defaultT } from "@/lib/i18n";
+import { ResourcePending, ResourceLoadError } from "@/components/resource-route-state";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeft,
   CalendarDays,
@@ -19,42 +14,32 @@ import {
   Pencil,
   StickyNote,
 } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { type ResourceStatus, STATUS_BADGE_CLASS, formatDate, urlHostname } from "@/lib/resources";
+import { formatDate, STATUS_BADGE_CLASS, urlHostname, type ResourceStatus } from "@/lib/resources";
+import { getResourceFn, updateResourceFn, deleteResourceFn } from "@/lib/resources.functions";
 
 export const Route = createFileRoute("/resources/$resourceId")({
+  loader: ({ params }) =>
+    getResourceFn({
+      data: { id: params.resourceId },
+    }),
+  component: ResourceDetailPage,
+  pendingComponent: ResourcePending,
+  errorComponent: ResourceLoadError,
+  notFoundComponent: ResourceNotFound,
   head: () => ({
     meta: [
-      {
-        title: defaultT("resource.detailTitle"),
-      },
-      {
-        name: "description",
-        content: defaultT("resource.detailMeta"),
-      },
-      {
-        property: "og:title",
-        content: defaultT("resource.detailTitle"),
-      },
-      {
-        property: "og:description",
-        content: defaultT("resource.detailMeta"),
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { title: defaultT("resource.detailTitle") },
+      { name: "description", content: defaultT("resource.detailMeta") },
     ],
   }),
-  component: () => (
-    <AuthGate>
-      <ResourceDetailPage />
-    </AuthGate>
-  ),
-  errorComponent: ResourceDetailError,
-  notFoundComponent: ResourceNotFound,
 });
 
 function StatusIcon({ status }: { status: ResourceStatus }) {
@@ -66,20 +51,19 @@ function StatusIcon({ status }: { status: ResourceStatus }) {
 function ResourceDetailPage() {
   const { t } = useTranslation();
   const { resourceId } = Route.useParams();
-  const result = useResource(resourceId);
-  const { session } = useAuth();
-  const queryClient = useQueryClient();
+  const resource = Route.useLoaderData();
+  const updateResource = useServerFn(updateResourceFn);
+  const deleteResource = useServerFn(deleteResourceFn);
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
-  const resource = result.data;
 
   async function save(input: ResourceInput) {
-    const updated = await updateResource(session!.user.id, resourceId, input);
-    queryClient.setQueryData(["resources", session!.user.id, resourceId], updated);
-    await queryClient.invalidateQueries({ queryKey: ["resources", session!.user.id] });
+    const updated = await updateResource({ data: { ...input, id: resourceId } });
+    if (!updated) return;
+    await router.invalidate({ sync: true });
     setEditing(false);
     toast.success(t("resource.saved"));
   }
@@ -88,37 +72,17 @@ function ResourceDetailPage() {
     setDeleting(true);
     setDeleteFailed(false);
     try {
-      await deleteResource(session!.user.id, resourceId);
-      queryClient.removeQueries({
-        queryKey: ["resources", session!.user.id, resourceId],
-        exact: true,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["resources", session!.user.id],
-        exact: true,
-      });
-      toast.success(t("resource.deleted"));
+      const result = await deleteResource({ data: { id: resourceId } });
+      if (!result?.success) return;
       await router.navigate({ to: "/resources" });
+      await router.invalidate({ sync: true });
+      toast.success(t("resource.deleted"));
     } catch {
       setDeleteFailed(true);
     } finally {
       setDeleting(false);
     }
   }
-  if (result.isPending)
-    return (
-      <p role="status" className="p-8">
-        {t("resource.loading")}
-      </p>
-    );
-  if (result.isError)
-    return (
-      <div role="alert" className="p-8">
-        <p>{t("resource.loadErrorHint")}</p>
-        <Button onClick={() => void result.refetch()}>{t("common.retry")}</Button>
-      </div>
-    );
-  if (!resource) return <ResourceNotFound />;
   if (editing)
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
@@ -260,31 +224,6 @@ function ResourceDetailPage() {
           ) : null}
         </CardFooter>
       </Card>
-    </div>
-  );
-}
-
-function ResourceDetailError({ error, reset }: ErrorComponentProps) {
-  const { t } = useTranslation();
-  console.error(error);
-  const router = useRouter();
-  return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10 text-center">
-      <h1 className="text-lg font-semibold">{t("resource.loadError")}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{t("resource.loadErrorHint")}</p>
-      <div className="mt-5 flex justify-center gap-2">
-        <Button
-          onClick={() => {
-            router.invalidate();
-            reset();
-          }}
-        >
-          {t("common.retry")}
-        </Button>
-        <Button asChild variant="outline">
-          <Link to="/resources">{t("common.back")}</Link>
-        </Button>
-      </div>
     </div>
   );
 }

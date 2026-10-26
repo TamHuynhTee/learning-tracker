@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RESOURCE_STATUSES } from "@/lib/resources";
-import type { ResourceInput } from "@/lib/resource-api";
+import type { ResourceInput } from "@/lib/resource-model";
 
 export function ResourceForm({
   initial,
