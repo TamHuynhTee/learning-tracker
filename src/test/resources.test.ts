@@ -11,9 +11,9 @@ import {
 
 describe("Learning resources (dữ liệu mẫu)", () => {
   it("có đúng ba trạng thái tiếng Việt: Chưa học, Đang học, Hoàn thành", () => {
-    expect(STATUS_LABELS["chua-hoc"]).toBe("Chưa học");
-    expect(STATUS_LABELS["dang-hoc"]).toBe("Đang học");
-    expect(STATUS_LABELS["hoan-thanh"]).toBe("Hoàn thành");
+    expect(STATUS_LABELS["not_started"]).toBe("Chưa học");
+    expect(STATUS_LABELS["learning"]).toBe("Đang học");
+    expect(STATUS_LABELS["completed"]).toBe("Hoàn thành");
     expect(RESOURCE_STATUSES).toHaveLength(3);
   });
 

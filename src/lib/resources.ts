@@ -1,4 +1,6 @@
-export const RESOURCE_STATUSES = ["chua-hoc", "dang-hoc", "hoan-thanh"] as const;
+import vi from "@/locales/vi.json";
+
+export const RESOURCE_STATUSES = ["not_started", "learning", "completed"] as const;
 
 export type ResourceStatus = (typeof RESOURCE_STATUSES)[number];
 
@@ -19,15 +21,15 @@ export interface Resource {
 }
 
 export const STATUS_LABELS: Record<ResourceStatus, string> = {
-  "chua-hoc": "Chưa học",
-  "dang-hoc": "Đang học",
-  "hoan-thanh": "Hoàn thành",
+  not_started: vi["status.not_started"],
+  learning: vi["status.learning"],
+  completed: vi["status.completed"],
 };
 
 export const STATUS_BADGE_CLASS: Record<ResourceStatus, string> = {
-  "chua-hoc": "bg-status-todo text-status-todo-foreground border-transparent",
-  "dang-hoc": "bg-status-doing text-status-doing-foreground border-transparent",
-  "hoan-thanh": "bg-status-done text-status-done-foreground border-transparent",
+  not_started: "bg-status-todo text-status-todo-foreground border-transparent",
+  learning: "bg-status-doing text-status-doing-foreground border-transparent",
+  completed: "bg-status-done text-status-done-foreground border-transparent",
 };
 
 /**
@@ -51,7 +53,7 @@ export function urlHostname(url: string): string {
 }
 
 // ============ Dữ liệu mẫu (bản demo giao diện) ============
-// Sẽ được thay bằng dữ liệu đọc từ Supabase khi người dùng kết nối backend.
+// Giữ làm fixture/tham chiếu; các trang thực tế đọc từ Supabase qua resource-api.ts.
 
 export const sampleResources: Resource[] = [
   {
@@ -59,7 +61,7 @@ export const sampleResources: Resource[] = [
     title: "Hiểu sâu về closure trong JavaScript",
     url: "https://developer.mozilla.org/vi/docs/Web/JavaScript/Closures",
     topic: "Frontend",
-    status: "hoan-thanh",
+    status: "completed",
     notes: "Làm lại 3 ví dụ ở cuối bài và tự giải thích lại bằng lời.",
     createdAt: "2026-09-14",
   },
@@ -68,7 +70,7 @@ export const sampleResources: Resource[] = [
     title: "Tài liệu chính thức của React — phần Learn từ đầu",
     url: "https://react.dev/learn",
     topic: "Frontend",
-    status: "dang-hoc",
+    status: "learning",
     notes: "Đang ở chương Managing State, làm bài tập Describing the UI.",
     createdAt: "2026-10-05",
   },
@@ -77,7 +79,7 @@ export const sampleResources: Resource[] = [
     title: "TypeScript Handbook — Generics",
     url: "https://www.typescriptlang.org/docs/handbook/2/generics.html",
     topic: "TypeScript",
-    status: "chua-hoc",
+    status: "not_started",
     createdAt: "2026-10-18",
   },
   {
@@ -85,7 +87,7 @@ export const sampleResources: Resource[] = [
     title: "Thiết kế REST API chuẩn và dễ bảo trì",
     url: "https://restfulapi.net/",
     topic: "Backend",
-    status: "dang-hoc",
+    status: "learning",
     notes: "Ghi chú: phân biệt PUT với PATCH, vẽ sơ đồ resource trước khi code.",
     createdAt: "2026-10-02",
   },
@@ -94,7 +96,7 @@ export const sampleResources: Resource[] = [
     title: "Phương pháp Pomodoro cho người tự học",
     url: "https://francescocirillo.com/pages/pomodoro-technique",
     topic: "Phương pháp học",
-    status: "hoan-thanh",
+    status: "completed",
     notes: "Áp dụng được: 25 phút học + 5 phút nghỉ, hẹn giờ bằng điện thoại.",
     createdAt: "2026-08-27",
   },
@@ -103,7 +105,7 @@ export const sampleResources: Resource[] = [
     title: "SQL từ cơ bản đến nâng cao (luyện từng bài)",
     url: "https://sqlbolt.com/",
     topic: "Database",
-    status: "chua-hoc",
+    status: "not_started",
     createdAt: "2026-10-20",
   },
 ];

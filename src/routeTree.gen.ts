@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesResourceIdRouteImport } from './routes/resources.$resourceId'
 import { Route as ResourcesNewRouteImport } from './routes/resources.new'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResourcesIndexRoute = ResourcesIndexRouteImport.update({
@@ -44,6 +50,7 @@ const ResourcesNewRoute = ResourcesNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/resources/$resourceId': typeof ResourcesResourceIdRoute
   '/resources/new': typeof ResourcesNewRoute
   '/resources/': typeof ResourcesIndexRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/resources/$resourceId': typeof ResourcesResourceIdRoute
   '/resources/new': typeof ResourcesNewRoute
   '/resources': typeof ResourcesIndexRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/resources/$resourceId': typeof ResourcesResourceIdRoute
   '/resources/new': typeof ResourcesNewRoute
   '/resources/': typeof ResourcesIndexRoute
@@ -66,14 +75,25 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/resources/$resourceId' | '/resources/new' | '/resources/'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/resources/$resourceId'
+    | '/resources/new'
+    | '/resources/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/login' | '/resources/$resourceId' | '/resources/new' | '/resources'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/resources/$resourceId'
+    | '/resources/new'
+    | '/resources'
   id:
     | '__root__'
     | '/'
     | '/login'
+    | '/register'
     | '/resources/$resourceId'
     | '/resources/new'
     | '/resources/'
@@ -82,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
   ResourcesResourceIdRoute: typeof ResourcesResourceIdRoute
   ResourcesNewRoute: typeof ResourcesNewRoute
   ResourcesIndexRoute: typeof ResourcesIndexRoute
@@ -101,6 +122,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resources/': {
@@ -130,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
   ResourcesResourceIdRoute: ResourcesResourceIdRoute,
   ResourcesNewRoute: ResourcesNewRoute,
   ResourcesIndexRoute: ResourcesIndexRoute,

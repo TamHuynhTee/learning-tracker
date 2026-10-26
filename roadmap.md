@@ -8,5 +8,6 @@
 - [x] Bước 5: Trang chi tiết `/resources/$resourceId` (not-found + error boundary)
 - [x] Bước 6: Trang `/login` (demo, chưa nối Auth)
 - [x] Bước 7: Kiểm thử routing + dữ liệu mẫu
-- [ ] Bước 8: Kết nối Supabase riêng của người dùng (Auth + database) — chờ người dùng kết nối project
-- [ ] Bước 9: CRUD thật (đọc/ghi/thay đổi trạng thái) + bảo vệ route cần đăng nhập — chờ bước 8
+- [x] Bước 8: Kết nối Supabase riêng (cấu hình client, Auth, schema resources và enum thống nhất)
+- [x] Bước 9: Code CRUD thật (đọc/thêm/sửa/xóa/đổi trạng thái) + bảo vệ các trang tài liệu theo phiên trình duyệt
+- [ ] Bước 10: Kiểm tra thủ công trên project thật: xác nhận email, CRUD, tải lại trang, RLS giữa hai tài khoản (xem SUPABASE.md)
