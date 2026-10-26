@@ -34,6 +34,8 @@ describe("Learning resources (dữ liệu mẫu)", () => {
 
   it("tìm tài liệu theo id và trả về undefined khi không có", () => {
     const first = sampleResources[0];
+    expect(first).toBeDefined();
+    if (!first) return;
     expect(getResourceById(first.id)?.title).toBe(first.title);
     expect(getResourceById("khong-ton-tai")).toBeUndefined();
   });
